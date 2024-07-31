@@ -1,0 +1,7 @@
+fastapi~=0.111.1
+jinja2
+pydantic
+osmnx~=1.9.4
+networkx~=3.3
+uvicorn~=0.30.3
+scikit-learn

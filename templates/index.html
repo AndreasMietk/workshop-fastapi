@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="jumbotron">
+        <h2 class="mt-4">Plan a route</h2>
+        <div id="map" style="height: 400px;"></div>
+        <div class="card card-body mt-3">
+            {% if route %}
+                <!-- Form to store the route -->
+                <form method="post" action="/routes">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="">Route name</span>
+                        </div>
+                        <input type="text" class="form-control" name="route_name">
+
+                    </div>
+                    <input type="hidden" name="route" value="{{ route | tojson }}">
+                    <button type="submit" class="btn btn-success mt-3">Save Route</button>
+                </form>
+                <script>
+                    /**
+                     * Initialize the map and set its view to our chosen geographical coordinates and a zoom level.
+                     * @global
+                     * @external "L"
+                     */
+                    document.addEventListener('DOMContentLoaded', function () {
+                        var map = L.map('map').setView([51.505, -0.09], 13);
+
+                        /**
+                         * Add OpenStreetMap tiles to the map.
+                         * @external "L.tileLayer"
+                         */
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap contributors'
+                        }).addTo(map);
+
+                        var startCoords = {{ start | tojson }}
+                        var endCoords = {{ end | tojson }}
+                        var route = {{ route | tojson }}
+
+                        var startLatLng = [parseFloat(startCoords.split(',')[1]), parseFloat(startCoords.split(',')[0])];
+                        var endLatLng = [parseFloat(endCoords.split(',')[1]), parseFloat(endCoords.split(',')[0])];
+
+                        /**
+                         * Create markers for the start and end points of the route and add them to the map.
+                         * @external "L.marker"
+                         */
+                        L.marker(startLatLng).addTo(map).bindPopup("Start Point").openPopup();
+                        L.marker(endLatLng).addTo(map).bindPopup("End Point").openPopup();
+
+                        /**
+                         * Convert route coordinates into a polyline and add it to the map.
+                         * @external "L.polyline"
+                         */
+                        var latlngs = route.map(function (coord) {
+                            return [coord[0], coord[1]];
+                        });
+                        var polyline = L.polyline(latlngs, {color: 'blue'}).addTo(map);
+                        map.fitBounds(polyline.getBounds());
+                    });
+                </script>
+            {% else %}
+                <form method="post" action="/routes/plan">
+                    <input type="hidden" id="start" name="start">
+                    <input type="hidden" id="end" name="end">
+                    <button type="submit" class="btn btn-primary">Plan Route</button>
+                </form>
+            {% endif %}
+
+            {% if error %}
+                <div class="alert alert-danger mt-3" role="alert">
+                    {{ error }}
+                </div>
+            {% endif %}
+        </div>
+        <script>
+            /**
+             * Set up the map and handle click events for placing start and end markers.
+             * @global
+             * @external "L"
+             */
+            document.addEventListener('DOMContentLoaded', function () {
+                var map = L.map('map').setView([51.505, -0.09], 13);
+
+                /**
+                 * Add OpenStreetMap tiles to the map.
+                 * @external "L.tileLayer"
+                 */
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                var startMarker, endMarker;
+
+                /**
+                 * Listen for click events on the map to place the start and end markers.
+                 * @external "map.on"
+                 */
+                map.on('click', function (e) {
+                    if (!startMarker) {
+                        startMarker = L.marker(e.latlng).addTo(map).bindPopup("Start Point").openPopup();
+                        document.getElementById('start').value = e.latlng.lng + ',' + e.latlng.lat;
+
+                        // Delay before allowing the end point to be placed
+                        setTimeout(function () {
+                            map.on('click', function (e) {
+                                if (!endMarker) {
+                                    endMarker = L.marker(e.latlng).addTo(map).bindPopup("End Point").openPopup();
+                                    document.getElementById('end').value = e.latlng.lng + ',' + e.latlng.lat;
+                                }
+                            });
+                        }, 1000); // 1 second delay
+                    }
+                });
+            });
+        </script>
+    </div>
+{% endblock %}

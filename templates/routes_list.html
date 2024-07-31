@@ -1,0 +1,13 @@
+<!-- templates/routes_list.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mt-4">Saved Routes</h2>
+<div class="list-group">
+    {% for route in routes %}
+    <a href="{{ url_for('get_route', route_id=route.id) }}" class="list-group-item list-group-item-action">
+        Route {{ route.id }}: {{ route.start_location }} to {{ route.end_location }}
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}
